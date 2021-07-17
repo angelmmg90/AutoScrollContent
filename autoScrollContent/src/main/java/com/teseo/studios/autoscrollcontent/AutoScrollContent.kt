@@ -4,7 +4,9 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.ViewGroup
 import android.view.animation.Interpolator
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import kotlin.math.abs
 
 private const val SPEED = 40
 
@@ -75,6 +77,163 @@ class AutoScrollContent @JvmOverloads constructor(
     private var isStopAutoScroll = false
 
     private var itemClickListener: ((ViewHolder?, Int) -> Unit)? = null
+
+    /**
+     * Start sliding
+     */
+    fun startAutoScroll() {
+        isStopAutoScroll = false
+        openAutoScroll(currentSpeed, false)
+    }
+
+    /**
+     * Start sliding
+     *
+     * @param speed   Sliding distance (determining the sliding speed)
+     * @param reverse Whether to slide backwards
+     */
+    fun openAutoScroll(speed: Int = SPEED, reverse: Boolean = false) {
+        isReverse = reverse
+        currentSpeed = speed
+        isOpenAuto = true
+        notifyLayoutManager()
+        startScroll()
+    }
+
+    /**
+     * Is it possible to manually slide when swiping automatically?
+     */
+    fun setCanTouch(b: Boolean) {
+        canTouch = b
+    }
+
+    fun setItemClickListener(onItemClicked: (ViewHolder?, Int) -> Unit) {
+        itemClickListener = onItemClicked
+    }
+
+    fun canTouch(): Boolean {
+        return canTouch
+    }
+
+    /**
+     * Set whether to display the list infinitely
+     */
+    fun setLoopEnabled(loopEnabled: Boolean) {
+        isLoopEnabled = loopEnabled
+        if (adapter != null) {
+            adapter!!.notifyDataSetChanged()
+            startScroll()
+        }
+    }
+
+    /**
+     * Whether to slide infinitely
+     */
+    fun isLoopEnabled(): Boolean {
+        return isLoopEnabled
+    }
+
+    /**
+     * Set whether to reverse
+     */
+    fun setReverse(reverse: Boolean) {
+        isReverse = reverse
+        notifyLayoutManager()
+        startScroll()
+    }
+
+    /**
+     * @param isStopAutoScroll
+     */
+    fun pauseAutoScroll(isStopAutoScroll: Boolean) {
+        this.isStopAutoScroll = isStopAutoScroll
+    }
+
+    fun getReverse(): Boolean {
+        return isReverse
+    }
+
+    /**
+     * Start scrolling
+     */
+    private fun startScroll() {
+        if (!isOpenAuto) return
+        if (scrollState == SCROLL_STATE_SETTLING) return
+        if (inflate && isReady) {
+            speedDy = 0
+            speedDx = currentSpeed
+            smoothScroll()
+        }
+    }
+
+    private fun smoothScroll() {
+        if (!isStopAutoScroll) {
+            val absSpeed = abs(currentSpeed)
+            val d = if (isReverse) -absSpeed else absSpeed
+            smoothScrollBy(d, d, interpolator)
+        }
+    }
+
+    private fun notifyLayoutManager() {
+        val layoutManager = layoutManager
+        if (layoutManager is LinearLayoutManager) {
+            val linearLayoutManager = layoutManager as LinearLayoutManager?
+            linearLayoutManager?.let { lm ->
+                lm.reverseLayout = isReverse
+            }
+        }
+    }
+
+    override fun swapAdapter(adapter: Adapter<*>?, removeAndRecycleExistingViews: Boolean) {
+        super.swapAdapter(generateAdapter(adapter!!), removeAndRecycleExistingViews)
+        isReady = true
+    }
+
+    override fun setAdapter(adapter: Adapter<*>?) {
+        super.setAdapter(generateAdapter(adapter!!))
+        isReady = true
+    }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        startScroll()
+    }
+
+    override fun onFinishInflate() {
+        super.onFinishInflate()
+        inflate = true
+    }
+
+    override fun onScrolled(dx: Int, dy: Int) {
+        if (pointTouch) {
+            speedDx = 0
+            speedDy = 0
+            return
+        }
+        val vertical: Boolean
+        if (dx == 0) { //Vertical scrolling
+            speedDy += dy
+            vertical = true
+        } else { //Horizontal scrolling
+            speedDx += dx
+            vertical = false
+        }
+        if (vertical) {
+            if (abs(speedDy) >= abs(currentSpeed)) {
+                speedDy = 0
+                smoothScroll()
+            }
+        } else {
+            if (abs(speedDx) >= abs(currentSpeed)) {
+                speedDx = 0
+                smoothScroll()
+            }
+        }
+    }
+
+    private fun generateAdapter(adapter: Adapter<*>): NestingRecyclerViewAdapter<out ViewHolder> {
+        return NestingRecyclerViewAdapter(this, adapter)
+    }
 
     class NestingRecyclerViewAdapter<VH : ViewHolder>(
         private val autoScrollRecyclerView: AutoScrollContent,
