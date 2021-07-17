@@ -1,0 +1,3 @@
+rootProject.name = "AutoScrollContentExample"
+include ':app'
+include ':autoScrollContent'
