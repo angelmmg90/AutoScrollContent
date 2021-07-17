@@ -2,13 +2,18 @@ package com.teseo.studios.autoscrollcontent
 
 import android.content.Context
 import android.util.AttributeSet
+import android.view.MotionEvent
 import android.view.ViewGroup
 import android.view.animation.Interpolator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import java.util.Calendar
 import kotlin.math.abs
 
 private const val SPEED = 40
+private var xPushDown = 0f
+private var yPushDown = 0f
+private var startClickTime: Long = 0
 
 class AutoScrollContent @JvmOverloads constructor(
     context: Context,
@@ -192,6 +197,82 @@ class AutoScrollContent @JvmOverloads constructor(
     override fun setAdapter(adapter: Adapter<*>?) {
         super.setAdapter(generateAdapter(adapter!!))
         isReady = true
+    }
+
+    /**
+     * This method JUST determines whether we want to intercept the motion.
+     * If we return true, onTouchEvent will be called and we do the actual
+     * scrolling there.
+     */
+    override fun onInterceptTouchEvent(e: MotionEvent): Boolean {
+        return if (canTouch) {
+            when (e.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    pointTouch = true
+
+                    xPushDown = e.x
+                    yPushDown = e.y
+                    startClickTime = Calendar.getInstance().timeInMillis;
+
+                    itemRvClicked()
+                    continueScroll()
+                }
+                MotionEvent.ACTION_UP -> {
+                    continueScroll()
+                    return false
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    return true
+                }
+            }
+            super.onInterceptTouchEvent(e)
+            return false
+        } else false
+    }
+
+    private fun continueScroll() {
+        if (isOpenAuto) {
+            pointTouch = false
+            currentSpeed += 1
+            startScroll()
+            currentSpeed -= 1
+        }
+    }
+
+    override fun onTouchEvent(e: MotionEvent): Boolean {
+        return if (canTouch) {
+            when (e.action) {
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    continueScroll()
+                    return false
+                }
+            }
+            super.onTouchEvent(e)
+        } else false
+    }
+
+    override fun performClick(): Boolean {
+        super.performClick()
+        return true
+    }
+
+    private fun itemRvClicked() {
+        val clickDuration: Long = Calendar.getInstance().timeInMillis - startClickTime
+
+        if (clickDuration < 200) {
+            val viewHolder: ViewHolder?
+            val actualPositionItem: Int
+            val child = this.findChildViewUnder(xPushDown, yPushDown)
+            if (child != null && itemClickListener != null) {
+                viewHolder = this.findContainingViewHolder(child)
+
+                viewHolder?.let {
+                    actualPositionItem =
+                        (this.adapter as NestingRecyclerViewAdapter).getActualPosition(viewHolder.adapterPosition)
+                    itemClickListener?.invoke(viewHolder, actualPositionItem)
+                }
+            }
+        }
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
