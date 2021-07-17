@@ -2,6 +2,7 @@ package com.teseo.studios.autoscrollcontent
 
 import android.content.Context
 import android.util.AttributeSet
+import android.view.ViewGroup
 import android.view.animation.Interpolator
 import androidx.recyclerview.widget.RecyclerView
 
@@ -74,6 +75,78 @@ class AutoScrollContent @JvmOverloads constructor(
     private var isStopAutoScroll = false
 
     private var itemClickListener: ((ViewHolder?, Int) -> Unit)? = null
+
+    class NestingRecyclerViewAdapter<VH : ViewHolder>(
+        private val autoScrollRecyclerView: AutoScrollContent,
+        var adapter: Adapter<VH>
+    ) : Adapter<VH>() {
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+            return adapter.onCreateViewHolder(parent, viewType)
+        }
+
+        override fun registerAdapterDataObserver(observer: AdapterDataObserver) {
+            super.registerAdapterDataObserver(observer)
+            adapter.registerAdapterDataObserver(observer)
+        }
+
+        override fun unregisterAdapterDataObserver(observer: AdapterDataObserver) {
+            super.unregisterAdapterDataObserver(observer)
+            adapter.unregisterAdapterDataObserver(observer)
+        }
+
+        override fun onBindViewHolder(holder: VH, position: Int) {
+            adapter.onBindViewHolder(holder, generatePosition(position))
+        }
+
+        override fun setHasStableIds(hasStableIds: Boolean) {
+            super.setHasStableIds(hasStableIds)
+            adapter.setHasStableIds(hasStableIds)
+        }
+
+        override fun getItemCount(): Int {
+            //If it is an infinite scroll mode, set an unlimited number of items
+            return if (getLoopEnable()) Int.MAX_VALUE else adapter.itemCount
+        }
+
+        override fun getItemViewType(position: Int): Int {
+            return adapter.getItemViewType(generatePosition(position))
+        }
+
+        override fun getItemId(position: Int): Long {
+            return adapter.getItemId(generatePosition(position))
+        }
+
+        /**
+         * Returns the corresponding position according to the current scroll mode
+         */
+        fun generatePosition(position: Int): Int {
+            return if (getLoopEnable()) {
+                getActualPosition(position)
+            } else {
+                position
+            }
+        }
+
+        /**
+         * Returns the actual position of the item
+         *
+         * @param position The position after starting to scroll will grow indefinitely
+         * @return Item actual location
+         */
+        fun getActualPosition(position: Int): Int {
+            val itemCount = adapter.itemCount
+            return if (position >= itemCount) position % itemCount else position
+        }
+
+        private fun getLoopEnable(): Boolean {
+            return autoScrollRecyclerView.isLoopEnabled
+        }
+
+        fun getReverse(): Boolean {
+            return autoScrollRecyclerView.isReverse
+        }
+    }
 
     /**
      * Custom estimator
