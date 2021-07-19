@@ -37,7 +37,7 @@ class AutoScrollContent @JvmOverloads constructor(
     private var speedDy: Int = 0
 
     /**
-     * Sliding speed, default 100
+     * Sliding speed, default 40
      */
     private var currentSpeed = SPEED
 
@@ -59,7 +59,7 @@ class AutoScrollContent @JvmOverloads constructor(
     /**
      * Whether the user can manually slide the screen
      */
-    private var canTouch = true
+    private var canTouch = false
 
     /**
      * Whether the user clicks on the screen
@@ -106,7 +106,7 @@ class AutoScrollContent @JvmOverloads constructor(
     }
 
     /**
-     * Is it possible to manually slide when swiping automatically?
+     * Is it possible to manually slide when swiping automatically
      */
     fun setCanTouch(b: Boolean) {
         canTouch = b
