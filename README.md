@@ -26,7 +26,7 @@ Add it in your root build.gradle at the end of repositories:
   ### Step 2. Add the dependency
   
   	dependencies {
-	        implementation 'com.github.angelmmg90:AutoScrollContent:Tag'
+	        implementation 'com.github.angelmmg90:AutoScrollContent:0.1.0'
 	  }
 
 
