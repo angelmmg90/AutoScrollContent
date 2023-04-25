@@ -1,5 +1,5 @@
 [![](https://jitpack.io/v/angelmmg90/AutoScrollContent.svg)](https://jitpack.io/#angelmmg90/AutoScrollContent) 
-[![](https://jitpack.io/v/angelmmg90/AutoScrollContent/month.svg](https://jitpack.io/#angelmmg90/AutoScrollContent) 
+[![](https://jitpack.io/v/angelmmg90/AutoScrollContent/month.svg)](https://jitpack.io/#angelmmg90/AutoScrollContent)
 [![Android Arsenal](https://img.shields.io/badge/Android%20Arsenal-AutoScrollContent-brightgreen.svg?style=flat)](https://android-arsenal.com/details/1/8364)
 
 # AutoScrollContent ✅
